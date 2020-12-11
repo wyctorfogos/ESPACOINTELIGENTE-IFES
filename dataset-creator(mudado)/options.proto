@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "is/msgs/camera.proto";
+
+message CameraSetup {
+  int64 id = 1;
+  is.vision.CameraConfig config = 2;
+}
+
+message DatasetCaptureOptions {
+  string broker_uri = 1;
+  string folder = 2;
+  repeated CameraSetup cameras = 3;
+}

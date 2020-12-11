@@ -1,0 +1,6 @@
+Como gravar os vídeos com as quatro câmeras:
+-Rodar os devidos serviços;
+-Rodar o capture.py;
+-O make_video;
+- request-2d-skeletons.py;
+-request-3d-skeletons.py;
