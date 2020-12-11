@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>My first three.js app</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%
+    }
+  </style>
+</head>
+
+<body>
+  <script src="js/three.js"></script>
+  <script src="js/controls/TrackballControls.js"></script>
+  <script src="js/mqtt.min.js"></script>
+  <script src="js/is_msgs_camera.js"></script>
+  <script src="js/is_msgs_common.js"></script>
+  <script src="js/loaders/GLTFLoader.js"></script>
+  <script src="js/lodash.js"></script>
+  <script src="js/math.min.js"></script>
+  <script>
+    var HKP = is_msgs_camera.HumanKeypoints;
+    var skeletonJoints = [
+      [HKP['NECK'], HKP['LEFT_SHOULDER'], [255, 30, 0]],
+      [HKP['LEFT_SHOULDER'], HKP['LEFT_ELBOW'], [255, 210, 0]],
+      [HKP['LEFT_ELBOW'], HKP['LEFT_WRIST'], [255, 240, 0]],
+      [HKP['NECK'], HKP['LEFT_HIP'], [0, 255, 93]],
+      [HKP['LEFT_HIP'], HKP['LEFT_KNEE'], [0, 45, 255]],
+      [HKP['LEFT_KNEE'], HKP['LEFT_ANKLE'], [127, 78, 150]],
+      [HKP['NECK'], HKP['RIGHT_SHOULDER'], [44, 53, 113]],
+      [HKP['RIGHT_SHOULDER'], HKP['RIGHT_ELBOW'], [255, 179, 96]],
+      [HKP['RIGHT_ELBOW'], HKP['RIGHT_WRIST'], [255, 104, 120]],
+      [HKP['NECK'], HKP['RIGHT_HIP'], [153, 153, 255]],
+      [HKP['RIGHT_HIP'], HKP['RIGHT_KNEE'], [0, 213, 202]],
+      [HKP['RIGHT_KNEE'], HKP['RIGHT_ANKLE'], [226, 17, 186]],
+     //  [HKP['NOSE'], HKP['LEFT_EYE']],
+     //  [HKP['LEFT_EYE'], HKP['LEFT_EAR']],
+     //  [HKP['NOSE'], HKP['RIGHT_EYE']],
+     //  [HKP['RIGHT_EYE'], HKP['RIGHT_EAR']]
+    ];
+
+    skeletonJoints = _.map(skeletonJoints, (joint) => {
+      joint[2] = _.map(joint[2], c => c / 255.0);
+      return joint;
+    });
+
+    var scene, camera, controls, renderer;
+
+    var positions = new Float32Array(128 * 3);
+    var colors = new Float32Array(128 * 3);
+    var lineMesh;
+
+    var raycaster, mouse, gridHelper;
+
+    var client;
+
+    init();
+    animate();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+      controls = new THREE.TrackballControls(camera);
+      controls.rotateSpeed = 1.0;
+      controls.zoomSpeed = 1.2;
+      controls.panSpeed = 0.8;
+      controls.noZoom = false;
+      controls.noPan = false;
+      controls.staticMoving = true;
+      controls.dynamicDampingFactor = 0.3;
+      controls.keys = [65, 83, 68];
+      controls.addEventListener('change', render);
+
+      var light = new THREE.HemisphereLight(0xbbbbff, 0x444422);
+      light.position.set(0, 1, 0);
+      scene.add(light);
+
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      camera.position.set(0, -10, 15);
+      camera.lookAt(0, 0, 0)
+
+      gridHelper = new THREE.GridHelper(400, 400, 0x0000ff, 0x808080);
+      gridHelper.rotation.x = Math.PI / 2;
+      scene.add(gridHelper);
+
+      function addRefSys(origin) {
+
+        function addArrow(origin, dir, hex) {
+          var length = 1;
+          var arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
+          arrowHelper.line.material.linewidth = 5;
+          arrowHelper.headWidth = 5;
+          scene.add(arrowHelper);
+        }
+        addArrow(origin, new THREE.Vector3(1, 0, 0), 0xff0000)
+        addArrow(origin, new THREE.Vector3(0, 1, 0), 0x00ff00)
+        addArrow(origin, new THREE.Vector3(0, 0, 1), 0x0000ff)
+      }
+
+      var origin = new THREE.Vector3(0, 0, 0);
+      addRefSys(origin);
+
+      var geometry = new THREE.BufferGeometry();
+      var material = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, linewidth: 5 });
+      geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3).setDynamic(true));
+      geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3).setDynamic(true));
+      geometry.computeBoundingSphere();
+      geometry.setDrawRange(0, 0);
+      lineMesh = new THREE.LineSegments(geometry, material);
+      scene.add(lineMesh);
+
+      connect();
+
+      window.addEventListener('resize', onWindowResize, false);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector3();
+      document.addEventListener('mousedown', onDocumentMouseDown, false);
+
+      render();
+    }
+
+    function onDocumentMouseDown(event) {
+      if (event.shiftKey) {
+          event.preventDefault();
+          mouse.set(
+            (event.clientX / window.innerWidth) * 2 - 1,
+            - (event.clientY / window.innerHeight) * 2 + 1,
+            0.5);
+  
+          mouse.unproject(camera)
+  
+          var dir = mouse.sub(camera.position).normalize();
+          var distance = - camera.position.z / dir.z;
+          var pos = camera.position.clone().add(dir.multiplyScalar(distance));
+  
+          goalMesh.position.set(pos.x, pos.y, pos.z);
+          goalMesh.updateMatrix()
+  
+          var goal = math.reshape(math.matrix([pos.x, pos.y, 0, 1]), [4, 1]);
+          var toPepperFrame = math.inv(pepperPosition);
+          var goalPepperFrame = math.multiply(toPepperFrame, goal);
+  
+          var navigationGoal = new is_msgs_common.Position()
+          navigationGoal.setX(goalPepperFrame.get([0,0]));
+          navigationGoal.setY(goalPepperFrame.get([1,0]));
+  
+          render();
+  
+          client.publish("RobotGateway/0/NavigateTo", navigationGoal.serializeBinary());
+      }
+    }
+
+    function connect() {
+
+      client =mqtt.connect('ws://guest:guest@localhost:15675/ws');
+      client.subscribe("SkeletonsGrouper/0/Localization");
+
+      var robotToWorld = math.identity(4);
+
+      client.on("message", function (topic, payload) {
+        var annotations = is_msgs_camera.ObjectAnnotations.deserializeBinary(new Uint8Array(payload)).toObject();
+
+        if (annotations.frameId == 1000) {
+          var size = _.sum(_.map(annotations.objectsList, object => object.keypointsList.length * 6))
+          var posIndex = 0;
+          var colIndex = 0;
+
+          function concatPosition(array) {
+            _.forEach(array, el => { positions[posIndex++] = el; });
+          }
+          function concatColor(array) {
+            _.forEach(array, el => { colors[colIndex++] = el; });
+          }
+
+          _.forEach(annotations.objectsList, function (object) {
+            var keypoints = _.keyBy(object.keypointsList, "id");
+            console.log((15 - object.keypointsList.length) / 15);
+
+            function addLine(fromId, toId, color) {
+              if (!_.has(keypoints, fromId) || !_.has(keypoints, toId)) return;
+              concatPosition(keypoints[fromId].position);
+              concatPosition(keypoints[toId].position);
+              concatColor(color);
+              concatColor(color);
+            }
+
+            _.forEach(skeletonJoints, function (joint) {
+              addLine(joint[0], joint[1], joint[2]);
+            });
+          })
+          lineMesh.geometry.setDrawRange(0, posIndex / 3);
+          lineMesh.geometry.attributes.color.set(colors);
+          lineMesh.geometry.attributes.position.set(positions);
+          lineMesh.geometry.attributes.position.needsUpdate = true;
+          lineMesh.geometry.attributes.color.needsUpdate = true;
+          render();
+        }
+      });
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      controls.handleResize();
+      render();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+    }
+
+    function render() {
+      renderer.render(scene, camera);
+    }
+
+  </script>
+</body>
+
+</html>

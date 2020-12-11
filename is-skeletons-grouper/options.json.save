@@ -1,0 +1,19 @@
+{
+  "broker_uri": "amqp://10.10.2.15:30000",
+  "zipkin_host": "10.10.2.15",
+  "zipkin_port": 30200,
+  "cameras": {
+    "0" : {"vertices": [{"x": 0.0, "y": 0.0}, {"x": 0.5, "y": 1.0}]},
+    "1" : {},
+    "2" : {},
+    "3" : {},
+    "4" : {}
+  },
+  "referential": 1000,
+  "min_error": 30.0,
+  "min_score": 0.4,
+  "max_distance": 0.8,
+  "period_ms": 200,
+  "release_samples": 5
+}
+amqp://guest:guest@localhost:5672
