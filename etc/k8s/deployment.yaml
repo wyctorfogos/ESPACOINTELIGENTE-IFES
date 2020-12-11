@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: is-frame-transformation-config
+  namespace: default
+data:
+  config: |-
+    {
+      "broker_uri": "amqp://rabbitmq.default",
+      "zipkin_uri": "http://zipkin.default",
+      "calibrations_path": "/opt/calibrations/is-aruco-calib/etc/calibrations/ufes"
+    }
+---
+
+apiVersion: extensions/v1beta1 
+kind: Deployment
+metadata:
+  name: "is-frame-transformation"
+spec:
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: is-frame-transformation
+    spec:
+      containers:
+      - name: service 
+        image: labviros/is-frame-transformation:0.0.4
+        command: ["/service.bin"]
+        args: ["/opt/options/options.json"]
+        imagePullPolicy: Always
+        resources:
+          limits: 
+            cpu: "1.0"
+            memory: 128Mi
+        volumeMounts:
+          - name: options
+            mountPath: /opt/options
+          - name: calibrations
+            mountPath: /opt/calibrations
+      volumes:
+      - name: options
+        configMap:
+          name: is-frame-transformation-config
+          items:
+          - key: config
+            path: options.json
+      - name: calibrations
+        gitRepo:
+          repository: "http://github.com/labviros/is-aruco-calib"
+          revision: cc5bcab408298b0a6957b89750602081793bf2b4
