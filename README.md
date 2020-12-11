@@ -6,3 +6,5 @@ Uma dica é utilizar o virtualenv, para que se tenha um espaço com todas as bib
 2. No terminal digite '(sudo) docker ps' para verificar se os containeres estão de pé.
 3. Mude o diretório dda pasta com os vídeos a serem analisads no arquivo 'options.json', na parte do folder.
 4. Rode o arquivo principal 'export-video-3d-medicoes-erros-no-3d.py' na pasta data-creator para analisar o vídeo desejado
+
+Em caso de dúvidas sobre os serviçoes ou outras questões, acesse: https://github.com/labviros, projeto original.
