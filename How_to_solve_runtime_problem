@@ -1,0 +1,6 @@
+sudo apt install nvidia-docker2
+nvidia-docker2
+nvidia-docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
