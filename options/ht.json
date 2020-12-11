@@ -1,0 +1,27 @@
+{
+  "broker_uri": "amqp://localhost:5672",
+  "zipkin_host": "localhost",
+  "zipkin_port": 9411,
+  "limits": {
+    "xmin": -2.5,
+    "xmax": 9.0,
+    "ymin": -2.5,
+    "ymax": 20.0 
+  },
+  "bins_step": 0.05,
+  "output_scale": 5.0,
+  "output_rotate": "ROTATE_90_CW",
+  "referential": {
+    "x": 0.0,
+    "y": 0.0,
+    "length": 50
+  },
+  "frame_id": 1000,
+  "draw_grid": true,
+  "flip_horizontal": true,
+  "flip_vertical": false,
+  "log_scale": true,
+  "average_coordinates": false,
+  "samples": 100000,
+  "period_ms": 200
+}

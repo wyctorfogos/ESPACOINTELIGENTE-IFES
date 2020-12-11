@@ -1,0 +1,16 @@
+{
+  "broker_uri": "amqp://localhost:5672",
+  "zipkin_host": "localhost",
+  "zipkin_port": 9411,
+  "zipkin_batch_size": 100,
+  "models_folder": "/",
+  "model": "MOBILENET_THIN",
+  "resize": {
+    "width": 432,
+    "height": 368
+  },
+  "resize_out_ratio": 4.0,
+  "render_topic": 0,
+  "gpu_mem_allow_growth": true,
+  "per_process_gpu_memory_fraction": 0.5
+}
