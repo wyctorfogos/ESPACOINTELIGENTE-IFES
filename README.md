@@ -1,5 +1,7 @@
 # ESPAÇO INTELIGENTE - IFES - CAMPUS VITÓRIA
 
+![Reconstrução tridimensional](https://github.com/wyctorfogos/ESPACOINTELIGENTE-IFES/blob/main/caminhada.gif)
+
 Antes de tudo, instale as bibliotecas necessárias que se encontram descritas no arquivos requiremensts.txt através do comando 'pip install -r requirements.txt'.
 Uma dica é utilizar o virtualenv, para que se tenha um espaço com todas as bibliotecas desejadas.
 
